@@ -1,6 +1,6 @@
 import json
 
-class Config:
+class Config(object):
 
     def __init__(self, fn, defaults={}):
         self.fn = fn

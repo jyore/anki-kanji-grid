@@ -5,17 +5,23 @@ from anki.utils import ids2str
 
 from .config import Config
 
-UI_PATH = os.path.join(mw.pm.addonFolder(), 'kanjigrid/ui.json')
+UI_PATH = 'kanjigrid/ui.json'
 UI_DEFAULTS = {
-    'decks' : {}
+    'decks' : {},
+    'cols_table': "20",
+    'cols_export': "48",
+    'group': 0,
+    'rev_strength': '500',
 }
 
+DEFAULT_SETS = 'kanjigrid/defaultsets.json'
+CUSTOM_SETS = 'kanjigrid/customsets.json'
 
 
 class KanjiSet(Config):
 
     def __init__(self, filepath):
-        super(Config, self).__init__(self, filepath)
+        super(KanjiSet, self).__init__(filepath)
         self.set = None
 
 
@@ -107,22 +113,34 @@ class KanjiStats:
 
 class KanjiGridUI:
 
-    def __init__(self, mw, cfg_path, cfg_defaults):
+    def __init__(self, mw, cfg_path=UI_PATH, cfg_defaults=UI_DEFAULTS, default_sets=DEFAULT_SETS, custom_sets=CUSTOM_SETS):
 
         self.config_action = QAction("Generate Kanji Grid 2", mw)
         mw.connect(self.config_action, SIGNAL("triggered()"), self.setup)
         mw.form.menuTools.addAction(self.config_action)
         menu = mw.form.menuTools.addMenu("Kanji Grid")
 
-        self.options = Config(os.path.join(mw.pm.addonFolder(),cfg_path), {'decks':{}})
+        self.options = Config(os.path.join(mw.pm.addonFolder(), cfg_path), cfg_defaults)
         self.options.load()
+
+        self.default_sets = KanjiSet(os.path.join(mw.pm.addonFolder(), default_sets))
+        self.custom_sets  = KanjiSet(os.path.join(mw.pm.addonFolder(), custom_sets))
+
 
 
     def populate_settings(self):
-        pass
+        self.cols_table.setText(self.options['cols_table'])
+        self.cols_export.setText(self.options['cols_export'])
+        self.rev_strength.setText(self.options['rev_strength'])
+        self.group_by.setCurrentIndex(self.options['group'])
+
 
     def update_settings(self):
-        pass
+        self.options['cols_table'] = self.cols_table.text()
+        self.options['cols_export'] = self.cols_export.text()
+        self.options['group'] = self.group_by.currentIndex()
+        self.options['rev_strength'] = self.rev_strength.text()
+
 
     def setup(self):
         self.swin = QDialog(mw)
@@ -133,45 +151,125 @@ class KanjiGridUI:
         self.options.load()
         self.populate_settings()
 
+        self.swin.setMinimumWidth(600)
+        self.swin.setMaximumWidth(600)
+
 
         if self.swin.exec_():
             mw.progress.start(immediate=True)
             self.update_settings()
             self.options.save()
+            #TODO: Show grid
             mw.progress.finish()
 
 
     def create_layout(self):
         hz_group_box = QGroupBox("Kanji Grid Setup")
-        #layout = QGridLayout()
-        layout = QVBoxLayout()
-        layout.addWidget(self.cb_list())
+        layout = QGridLayout()
+
+        self.decklist = self.cb_list()
+
+
+        self.cols_table   = QLineEdit()
+        self.cols_export  = QLineEdit()
+        self.rev_strength = QLineEdit()
+
+        self.group_by = QComboBox()
+        self.group_by.addItems(self.load_group_sets())
+
+
+        self.generatebtn = QPushButton("Generate")
+        self.generatebtn.connect(self.generatebtn, SIGNAL("clicked()"), self.swin, SLOT("accept()"))
+        self.cancel = QPushButton("Cancel")
+        self.cancel.connect(self.cancel, SIGNAL("clicked()"), self.swin, SLOT("reject()"))
+
+        # row 0
+        layout.addWidget(QLabel("Check Each Deck to Include in Scan"), 0, 0, 1, 4)
+        layout.addWidget(QLabel("Number colums in table"), 0, 7, 1, 4)
+
+        # row 1
+        layout.addWidget(self.decklist, 1, 0, 6, 4) # through row 5
+        layout.addWidget(self.cols_table, 1, 7, 1, 4)
+
+        # row 2
+        layout.addWidget(QLabel("Number columns in export"), 2, 7, 1, 4)
+        
+
+        # row 3
+        layout.addWidget(self.cols_export, 3, 7, 1, 4)
+
+
+        # row 4
+        layout.addWidget(QLabel(""), 4, 7, 1, 4)
+
+
+        # row 5
+        layout.addWidget(QLabel("Number reviews for strength"), 5, 7, 1, 4)
+
+
+        # row 6
+        layout.addWidget(self.rev_strength, 6, 7, 1, 4)
+
+
+        # row 7
+        layout.addWidget(QLabel("Group Results by"), 7, 0, 1, 4)
+
+
+        # row 9
+        layout.addWidget(self.group_by, 8, 0, 1, 4)
+        #layout.addWidget(QPushButton("Upload Custom Set"), 8, 7, 1, 4) #TODO: allow custom upload
+
+
+        # row 10
+        layout.addWidget(QLabel(""), 9, 0, 1, 4)
+
+
+        # row 11
+        layout.addWidget(self.cancel, 10, 0, 1, 4)
+        layout.addWidget(self.generatebtn, 10, 7, 1, 4)
 
 
         hz_group_box.setLayout(layout)
         return hz_group_box
 
 
+
     def cb_list(self):
         widget = QListWidget()
+        widget.itemChanged.connect(self.list_state_changed)
 
         decks = mw.col.decks.all()
 
         for deck in decks:
-            item = QListWidgetItem(deck["name"])
+            name = deck["name"]
+            item = QListWidgetItem(name)
             item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
             
 
-            if deck["name"] in self.options['decks']:
-                item.setCheckState(Qt.Checked if self.options['decks']['name']['state'] else Qt.Unchecked)
+            if name in self.options['decks']:
+                item.setCheckState(Qt.Checked if self.options['decks'][name]['state'] else Qt.Unchecked)
             else:
-                self.options['decks']['name'] = {'state': True }
+                self.options['decks'][name] = {'state': True }
                 item.setCheckState(Qt.Checked)
 
             # always update the id (in case of rare event someone deletes a
             # deck and recreates a deck with the same name
-            self.options['decks']['name']['id'] = deck['id']
+            self.options['decks'][name]['id'] = deck['id']
 
             widget.addItem(item)
 
         return widget
+
+
+    def load_group_sets(self):
+        self.default_sets.load()
+        self.custom_sets.load()
+
+        defaults = self.default_sets.get_set_names()
+        customs  = self.custom_sets.get_set_names()
+        defaults.extend(customs)
+        return defaults 
+
+
+    def list_state_changed(self, item):
+        self.options['decks'][item.text()]['state'] = item.checkState()
