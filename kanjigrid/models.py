@@ -1,8 +1,15 @@
-import re
+import os,re,random
 from aqt import mw
+from aqt.qt import *
 from anki.utils import ids2str
 
 from .config import Config
+
+UI_PATH = os.path.join(mw.pm.addonFolder(), 'kanjigrid/ui.json')
+UI_DEFAULTS = {
+    'decks' : {}
+}
+
 
 
 class KanjiSet(Config):
@@ -100,5 +107,71 @@ class KanjiStats:
 
 class KanjiGridUI:
 
-    def __init__(self):
+    def __init__(self, mw, cfg_path, cfg_defaults):
+
+        self.config_action = QAction("Generate Kanji Grid 2", mw)
+        mw.connect(self.config_action, SIGNAL("triggered()"), self.setup)
+        mw.form.menuTools.addAction(self.config_action)
+        menu = mw.form.menuTools.addMenu("Kanji Grid")
+
+        self.options = Config(os.path.join(mw.pm.addonFolder(),cfg_path), {'decks':{}})
+        self.options.load()
+
+
+    def populate_settings(self):
         pass
+
+    def update_settings(self):
+        pass
+
+    def setup(self):
+        self.swin = QDialog(mw)
+        layout = QVBoxLayout()
+        layout.addWidget(self.create_layout())
+        self.swin.setLayout(layout)
+
+        self.options.load()
+        self.populate_settings()
+
+
+        if self.swin.exec_():
+            mw.progress.start(immediate=True)
+            self.update_settings()
+            self.options.save()
+            mw.progress.finish()
+
+
+    def create_layout(self):
+        hz_group_box = QGroupBox("Kanji Grid Setup")
+        #layout = QGridLayout()
+        layout = QVBoxLayout()
+        layout.addWidget(self.cb_list())
+
+
+        hz_group_box.setLayout(layout)
+        return hz_group_box
+
+
+    def cb_list(self):
+        widget = QListWidget()
+
+        decks = mw.col.decks.all()
+
+        for deck in decks:
+            item = QListWidgetItem(deck["name"])
+            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
+            
+
+            if deck["name"] in self.options['decks']:
+                item.setCheckState(Qt.Checked if self.options['decks']['name']['state'] else Qt.Unchecked)
+            else:
+                self.options['decks']['name'] = {'state': True }
+                item.setCheckState(Qt.Checked)
+
+            # always update the id (in case of rare event someone deletes a
+            # deck and recreates a deck with the same name
+            self.options['decks']['name']['id'] = deck['id']
+
+            widget.addItem(item)
+
+        return widget
