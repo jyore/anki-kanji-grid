@@ -63,53 +63,61 @@ class KanjiStats:
         self.kanji_regex = re.compile(ur"[\u3400-\u4DB5\u4E00-\u9FCB\uF900-\uFA6A]")
 
 
+    # TODO: Optimize
     def generate(self):
 
         # all notes
         notes = mw.col.db.all('select id,flds from notes') 
-        for note in notes:
-                 
-            # all reviews for each note in selected decks
-            reviews = mw.col.db.all('select id/1000.0,ease,time/1000.0 from revlog where cid = (select id from cards where nid = %s and did in %s)' % (note[0], ids2str(self.decks)))
+        for (nid,flds) in notes:
+            cards = mw.col.db.all('select id from cards where nid = %s and did in %s' % (nid, ids2str(self.decks)))
+
+            for (card) in cards:
+                # all reviews for each note in selected decks
+                reviews = mw.col.db.all('select id/1000.0,ease,time/1000.0 from revlog where cid = %s' % card)
+
       
-            # get unique list of kanji from note data (all fields)
-            characters = set(self.kanji_regex.findall(note[1]))
-            for k in characters:
-                if k not in self.kanji:
-                    self.kanji[k] = {
-                        'count':    0,
-                        'reviews':  0,
-                        'first':    9999999999999.0,
-                        'last':     0.0,
-                        'pass':     0,
-                        'fail':     0,
-                        'time':     0,
-                    }
+                # get unique list of kanji from note data (all fields)
+                characters = set(self.kanji_regex.findall(flds))
+                for k in characters:
+                    if k not in self.kanji:
+                        self.kanji[k] = {
+                            'count':    0,
+                            'reviews':  0,
+                            'first':    9999999999999.0,
+                            'last':     0.0,
+                            'pass':     0,
+                            'fail':     0,
+                            'time':     0,
+                        }
            
-                self.kanji[k]['count'] += 1
-                self.kanji[k]['reviews'] += len(reviews)
+                    self.kanji[k]['count'] += 1
+                    self.kanji[k]['reviews'] += len(reviews)
           
-                for (date,ease,sec) in reviews:
-                    self.kanji[k]['first'] = min(self.kanji[k]['first'], date)
-                    self.kanji[k]['last'] = max(self.kanji[k]['last'], date)
-                    self.kanji[k]['time'] = self.kanji[k]['time'] + sec
+                    for (date,ease,sec) in reviews:
+                        self.kanji[k]['first'] = min(self.kanji[k]['first'], date)
+                        self.kanji[k]['last'] = max(self.kanji[k]['last'], date)
+                        self.kanji[k]['time'] = self.kanji[k]['time'] + sec
           
-                    if ease == 1:
-                        self.kanji[k]['fail'] += 1
-                    else:
-                        self.kanji[k]['pass'] += 1
+                        if ease == 1:
+                            self.kanji[k]['fail'] += 1
+                        else:
+                            self.kanji[k]['pass'] += 1
 
 
-        for k in self.kanji:
-            if self.kanji[k]['reviews'] > 0:
-                self.kanji[k]['first'] = time.strftime(_('%Y-%m-%d'), time.localtime(self.kanji[k]['first']))
-                self.kanji[k]['last']  = time.strftime(_('%Y-%m-%d'), time.localtime(self.kanji[k]['last']))
-                self.kanji[k]['rate']  = "%.1f%%" % (100*self.kanji[k]['pass']/float(self.kanji[k]['reviews']))
-                self.kanji[k]['strength'] = self.__calculate_strength(self.kanji[k])
-            else:
-                self.kanji[k]['first'] = self.kanji[k]['last'] = "New"
-                self.kanji[k]['rate'] = "0.0%"
-                self.kanji[k]['strength'] = 0
+            for k in self.kanji:
+                if self.kanji[k]['reviews'] > 0:
+                    try:
+                        self.kanji[k]['rate']  = "%.1f%%" % (100.0*self.kanji[k]['pass']/float(self.kanji[k]['reviews']))
+                        self.kanji[k]['strength'] = self.__calculate_strength(self.kanji[k])
+                        self.kanji[k]['first'] = time.strftime(_('%Y-%m-%d'), time.localtime(self.kanji[k]['first']))
+                        self.kanji[k]['last']  = time.strftime(_('%Y-%m-%d'), time.localtime(self.kanji[k]['last']))
+                    except Exception:
+                        pass
+
+                else:
+                    self.kanji[k]['first'] = self.kanji[k]['last'] = "New"
+                    self.kanji[k]['rate'] = "0.0%"
+                    self.kanji[k]['strength'] = 0
      
 
 
@@ -118,7 +126,7 @@ class KanjiStats:
     # the number of times a kanji has been reviewed
     # relative to the configured max range
     def __calculate_strength(self, kanji):
-        return min(kanji['reviews'] / float(self.nrev), 1.0)
+        return min(kanji['reviews'] / float(self.nrev), 1.0)/2
 
 
 
