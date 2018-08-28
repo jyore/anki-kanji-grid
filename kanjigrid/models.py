@@ -411,7 +411,7 @@ class KanjiGridUI:
         hl.addWidget(bb)
         
         self.win.setLayout(vl)
-        self.win.resize(500,400)
+        self.win.resize(800,600)
         return 0
         
         
@@ -425,6 +425,7 @@ class KanjiGridUI:
             chars = tier.values()[0]
 
             count = 0
+            found = 0
             found_chars = []
             cols = int(self.options['cols_export'] if save else self.options['cols_table'])
             table += '<h2 style="color:#888;">%s</h2>{stats}<table width="85%%"><tr>' % name
@@ -432,8 +433,9 @@ class KanjiGridUI:
 
             for char in chars:
 
-                if count % cols == 0 and count != 0:
+                if count >= cols and count != 0:
                     table += '</tr><tr>'
+                    count = 0
 
                 if char in self.scan.kanji.keys():
                     stats = self.scan.kanji[char]
@@ -457,8 +459,8 @@ class KanjiGridUI:
                     found_chars.append(char)
                     del self.scan.kanji[char]
                     count += 1
+                    found += 1
 
-            found = count
             table += '</tr></table><br><details><summary>Missing Kanji</summary><table style="max-width:75%;"><tr>'
             count = 0
             missing = set(chars).difference(found_chars)
