@@ -10,10 +10,11 @@ from .config import Config
 
 UI_PATH = 'kanjigrid/ui.json'
 UI_DEFAULTS = {
-    'decks' : {},
-    'cols_table': "20",
-    'cols_export': "48",
-    'group': 0,
+    'decks':        {},
+    'fields':       {},
+    'cols_table':   "20",
+    'cols_export':  "48",
+    'group':        0,
     'rev_strength': '500',
 }
 
@@ -62,12 +63,20 @@ class KanjiStats:
         self.kanji_regex = re.compile(ur"[\u3400-\u4DB5\u4E00-\u9FCB\uF900-\uFA6A]")
 
 
-    def generate(self):
+    # TODO: Update to ignore fields in exclusion list (get model via n.mid)
+    def generate(self,exclusions={}):
 
         self.kanji = {}
-        results = mw.col.db.all('select c.id,n.flds from cards c join notes n on c.nid=n.id where c.did in %s' % ids2str(self.decks))
+        results = mw.col.db.all('select c.id,n.flds,n.mid from cards c join notes n on c.nid=n.id where c.did in %s' % ids2str(self.decks))
 
-        for (card,flds) in results:
+        for (card,flds,model) in results:
+
+
+            if str(model) in exclusions:
+                flist = flds.split("")
+                [flist.pop(i) for i in sorted(exclusions[str(model)],reverse=True)]
+                flds = "".join(flist)
+
 
             characters = set(self.kanji_regex.findall(flds))
             reviews = mw.col.db.all('select id/1000.0,ease,time/1000.0 from revlog where cid = %s' % card)
@@ -186,6 +195,7 @@ class KanjiGridUI:
         layout = QGridLayout()
 
         self.decklist = self.cb_list()
+        self.fieldtree = self.nf_tree()
 
 
         self.cols_table   = QLineEdit()
@@ -203,48 +213,49 @@ class KanjiGridUI:
 
         # row 0
         layout.addWidget(QLabel("Check Each Deck to Include in Scan"), 0, 0, 1, 4)
-        layout.addWidget(QLabel("Number colums in table"), 0, 7, 1, 4)
-
-        # row 1
-        layout.addWidget(self.decklist, 1, 0, 6, 4) # through row 5
-        layout.addWidget(self.cols_table, 1, 7, 1, 4)
-
-        # row 2
-        layout.addWidget(QLabel("Number columns in export"), 2, 7, 1, 4)
+        layout.addWidget(QLabel("Check Each Field to Include in Scan"), 0, 7, 1, 4)
         
 
-        # row 3
-        layout.addWidget(self.cols_export, 3, 7, 1, 4)
-
-
-        # row 4
-        layout.addWidget(QLabel(""), 4, 7, 1, 4)
-
-
-        # row 5
-        layout.addWidget(QLabel("Number reviews for strength"), 5, 7, 1, 4)
-
-
-        # row 6
-        layout.addWidget(self.rev_strength, 6, 7, 1, 4)
+        # row 1
+        layout.addWidget(self.decklist, 1, 0, 6, 4) 
+        layout.addWidget(self.fieldtree, 1, 7, 6, 4) 
 
 
         # row 7
-        layout.addWidget(QLabel("Group Results by"), 7, 0, 1, 4)
+        layout.addWidget(QLabel(""), 7, 7, 1, 4)
+        
+
+        # row 8
+        layout.addWidget(QLabel("Number of Columns in Table"), 8, 0, 1, 4)
+        layout.addWidget(QLabel("Number of Columns in Export"), 8, 7, 1, 4)
 
 
         # row 9
-        layout.addWidget(self.group_by, 8, 0, 1, 4)
-        #layout.addWidget(QPushButton("Upload Custom Set"), 8, 7, 1, 4) #TODO: allow custom upload
+        layout.addWidget(self.cols_table, 9, 0, 1, 4)
+        layout.addWidget(self.cols_export, 9, 7, 1, 4)
 
 
         # row 10
-        layout.addWidget(QLabel(""), 9, 0, 1, 4)
+        layout.addWidget(QLabel(""), 10, 7, 1, 4)
 
 
         # row 11
-        layout.addWidget(self.cancel, 10, 0, 1, 4)
-        layout.addWidget(self.generatebtn, 10, 7, 1, 4)
+        layout.addWidget(QLabel("Number of Reviews to Measure Strength By"), 11, 0, 1, 4)
+        layout.addWidget(QLabel("Group Results By"), 11, 7, 1, 4)
+
+
+        # row 12
+        layout.addWidget(self.rev_strength, 12, 0, 1, 4)
+        layout.addWidget(self.group_by, 12, 7, 1, 4)
+
+
+        # row 13
+        layout.addWidget(QLabel(""), 13, 0, 1, 4)
+
+
+        # row 14
+        layout.addWidget(self.cancel, 14, 0, 1, 4)
+        layout.addWidget(self.generatebtn, 14, 7, 1, 4)
 
 
         hz_group_box.setLayout(layout)
@@ -279,6 +290,36 @@ class KanjiGridUI:
         return widget
 
 
+    def nf_tree(self):
+        widget = QTreeWidget()
+        widget.itemChanged.connect(self.tree_state_changed)
+
+        for model in mw.col.models.allNames():
+            item = QTreeWidgetItem()
+            item.setText(0,model)
+            item.setFlags(Qt.ItemIsEnabled)
+
+            model = mw.col.models.byName(model)
+            fields = model['flds']
+            for field in fields:
+                fname = field['name']
+                child = QTreeWidgetItem()
+                child.setText(0,fname)
+                child.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
+
+                if str(model['id']) in self.options['fields'] and field['ord'] in self.options['fields'][str(model['id'])]:
+                    child.setCheckState(0, Qt.Unchecked)
+                else:
+                    child.setCheckState(0, Qt.Checked)
+
+                item.addChild(child)
+
+            widget.addTopLevelItem(item)
+
+
+        return widget
+
+
     def load_group_sets(self):
         self.default_sets.load()
         self.custom_sets.load()
@@ -293,6 +334,35 @@ class KanjiGridUI:
         self.options['decks'][item.text()]['state'] = item.checkState()
 
 
+    def tree_state_changed(self, item):
+        if item.childCount() > 0:
+            return
+
+        field = item.text(0)
+        state = item.checkState(0)
+
+        mname = item.parent().text(0)
+        model = mw.col.models.byName(mname)
+        mid   = str(model['id'])
+        fmap  = mw.col.models.fieldMap(model)
+        findex = fmap[field][0]
+
+
+        if mid not in self.options['fields']:
+            self.options['fields'][mid] = []
+
+
+        try:
+            self.options['fields'][mid].remove(findex)
+        except Exception:
+            pass
+
+        if not state:
+            self.options['fields'][mid].append(findex)
+
+
+
+
     def show_grid(self):
         decks = []
         for i in range(self.decklist.count()):
@@ -302,7 +372,7 @@ class KanjiGridUI:
                 decks.append(self.options['decks'][item.text()]['id'])
 
         self.scan = KanjiStats(decks,nrev=self.options['rev_strength'])
-        self.scan.generate()
+        self.scan.generate(self.options['fields'])
 
         # Optimize?
         self.default_sets.select_set(self.group_by.itemText(self.options['group']))
@@ -355,7 +425,7 @@ class KanjiGridUI:
                     decks.append(self.options['decks'][item.text()]['id'])
             
             self.scan = KanjiStats(decks,nrev=self.options['rev_strength'])
-            self.scan.generate()
+            self.scan.generate(self.options['fields'])
 
             mw.progress.start(immediate=True)
             if not ".htm" in fileName:
