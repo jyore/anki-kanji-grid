@@ -208,6 +208,8 @@ class KanjiGridUI:
 
         self.generatebtn = QPushButton("Generate")
         self.generatebtn.connect(self.generatebtn, SIGNAL("clicked()"), self.swin, SLOT("accept()"))
+        self.csv = QPushButton("Export CSV")
+        self.csv.connect(self.csv, SIGNAL("clicked()"), self.csv_export)
         self.cancel = QPushButton("Cancel")
         self.cancel.connect(self.cancel, SIGNAL("clicked()"), self.swin, SLOT("reject()"))
 
@@ -254,8 +256,9 @@ class KanjiGridUI:
 
 
         # row 14
-        layout.addWidget(self.cancel, 14, 0, 1, 4)
-        layout.addWidget(self.generatebtn, 14, 7, 1, 4)
+        layout.addWidget(self.cancel, 16, 0, 1, 12)
+        layout.addWidget(self.csv, 15, 0, 1, 12)
+        layout.addWidget(self.generatebtn, 14, 0, 1, 12)
 
 
         hz_group_box.setLayout(layout)
@@ -379,6 +382,7 @@ class KanjiGridUI:
         self.default_sets.select_set(self.group_by.itemText(self.options['group']))
         self.display_grid()
         
+
 
 
     def generate(self,save=False):
@@ -588,6 +592,45 @@ class KanjiGridUI:
 
 
         return table
+
+
+    def csv_export(self):
+        fn = QFileDialog.getSaveFileName(self.swin, "Save CSV", QDesktopServices.storageLocation(QDesktopServices.DesktopLocation), "CSV (*.csv *.txt)")
+
+        if fn != "":
+
+            decks = []        
+            for i in range(self.decklist.count()):
+                item = self.decklist.item(i)
+    
+                if item.checkState():
+                    decks.append(self.options['decks'][item.text()]['id'])
+                
+            self.scan = KanjiStats(decks,nrev=self.options['rev_strength'])
+            self.scan.generate(self.options['fields'])
+    
+            lines = ["character,cards,reviews,first_rep,last_rep,pass,fail,pass_rate,time,strength"]
+            for char in sorted(self.scan.kanji.keys()):
+                lines.append("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
+                    char,
+                    self.scan.kanji[char]['count'],
+                    self.scan.kanji[char]['reviews'],
+                    self.scan.kanji[char]['first'],
+                    self.scan.kanji[char]['last'],
+                    self.scan.kanji[char]['pass'],
+                    self.scan.kanji[char]['fail'],
+                    self.scan.kanji[char]['rate'],
+                    self.scan.kanji[char]['time'],
+                    self.scan.kanji[char]['strength']*2
+                ))
+    
+            mw.progress.start(immediate=True)
+            fileOut = codecs.open(fn, 'w', 'utf-8')
+            fileOut.write("\n".join(lines))
+            fileOut.close()
+            mw.progress.finish()
+            showInfo("CSV saved to %s!" % os.path.abspath(fileOut.name))
+        
 
 
 
