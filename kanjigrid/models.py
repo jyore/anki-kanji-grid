@@ -293,6 +293,7 @@ class KanjiGridUI:
     def nf_tree(self):
         widget = QTreeWidget()
         widget.itemChanged.connect(self.tree_state_changed)
+        widget.headerItem().setHidden(True)
 
         for model in mw.col.models.allNames():
             item = QTreeWidgetItem()
