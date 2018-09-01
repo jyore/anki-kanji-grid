@@ -489,7 +489,10 @@ class KanjiGridUI:
 
     def html_for_tier(self, save=False):
         table = ""
-        for t in xrange(0,self.default_sets.num_tiers()):
+        ntiers = self.default_sets.num_tiers()
+        cols = int(self.options['cols_export'] if save else self.options['cols_table'])
+        
+        for t in xrange(0,ntiers):
             tier = self.default_sets.get_tier(t)
             name = tier.keys()[0]
             chars = tier.values()[0]
@@ -497,7 +500,6 @@ class KanjiGridUI:
             count = 0
             found = 0
             found_chars = []
-            cols = int(self.options['cols_export'] if save else self.options['cols_table'])
             table += '<h2 style="color:#888;">%s</h2>{stats}<table width="85%%"><tr>' % name
             total = len(chars)
 
@@ -551,10 +553,11 @@ class KanjiGridUI:
             table = table.replace("{stats}", '<h4 style="color:#888;">%d of %d - %0.2f%%</h4>' % (found, total, (found*100.0)/total))
 
 
-        additional = self.scan.kanji.keys()
+        additional = sorted(self.scan.kanji.keys())
         count = 0
         if len(additional):
-            table += '<h2 style="color:#888;">Additional Kanji</h2>{stats}<table width="85%"><tr>'
+            heading = 'Additional Kanji' if ntiers > 0 else 'All Kanji'
+            table += '<h2 style="color:#888;">%s</h2>{stats}<table width="85%%"><tr>' % heading
 
             for char in additional:
 
