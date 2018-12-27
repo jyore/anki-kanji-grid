@@ -3,6 +3,8 @@
 import os,sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "support"))
 
+import anki
+from aqt.deckbrowser import DeckBrowser
 
 from .gui.configurator import Configurator
 from .gui.kanjigrid import KanjiGrid
@@ -16,6 +18,14 @@ mw.kanjigrid = {
     'kanjigrid': KanjiGrid(mw),
     'launcher':  Launcher(mw),
 }
+
+
+def preload(a, b):
+    mw.kanjigrid['configure'].deck_widget()
+    mw.kanjigrid['configure'].note_widget()
+
+
+DeckBrowser._renderPage = anki.hooks.wrap(DeckBrowser._renderPage, preload, 'after')
 
 
 launch_action = QAction(mw)

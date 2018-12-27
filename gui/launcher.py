@@ -26,9 +26,8 @@ class Launcher(Dialog):
 
 
         # row 0:
-        layout.addWidget(QLabel("Group Results By:"), 0, 0, 1, 3)
-        layout.addWidget(self.group_by, 0, 3, 1, 5)
-
+        layout.addWidget(QLabel("Group Results By:"), 0, 0, 1, 2)
+        layout.addWidget(self.group_by, 0, 2, 1, 6)
 
         return layout
 
@@ -38,7 +37,7 @@ class Launcher(Dialog):
         config = self.mw.addonManager.getConfig(__name__) 
 
         self.group_by.clear()
-        self.group_by.addItems(sorted(config['tiers'].keys()))
+        self.group_by.addItems(config['tiers'].keys())
         super(Launcher, self).show()
 
 

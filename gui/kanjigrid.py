@@ -23,11 +23,13 @@ class KanjiGrid(QDialog):
         self.setWindowTitle(self.title)
         self.resize(1200,800)
 
+        self.web.loadFinished.connect(super(KanjiGrid, self).show)
+        self.web.loadFinished.connect(self.mw.progress.finish)
     
-    def show(self, group_by):
-        self.web.stdHtml(self.generate(group_by))
-        super(KanjiGrid, self).show()
 
+    def show(self, group_by):
+        self.mw.progress.start(immediate=True, label="Generating Kanji Grid...")
+        self.web.stdHtml(self.generate(group_by))
 
 
     def ui(self):

@@ -4,13 +4,12 @@ from aqt.utils import showInfo
 from .base import Dialog
 
 
-#XXX: Consider running deck_widget/note_widget on __init__ to 
-# ensure that there is some config on startup
 class Configurator(Dialog):
 
     def __init__(self, mw):
         self.mw = mw
         self.mw.addonManager.setConfigAction(__name__, self.show)
+
         super(Configurator, self).__init__("Configure", self.mw)
 
 
