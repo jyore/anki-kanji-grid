@@ -61,8 +61,9 @@ class KanjiGrid(QDialog):
         return layout
 
 
-    def generate(self, group_by):
+    def generate(self, group_by, separator=' | '):
         config = self.mw.addonManager.getConfig(__name__)
+        self.last_group_by = group_by
         
         exclusions = {}
         deck_ids = [x for x in config['decks'] if config['decks'][x] > 0]
@@ -96,7 +97,9 @@ class KanjiGrid(QDialog):
                 found, 
                 missing, 
                 cols=int(config['cols']), 
-                threshold=int(config['threshold'])
+                threshold=int(config['threshold']),
+                separator=separator,
+                force_percent=True,
             ))
 
         tier_docs.append(tier_html(
@@ -104,19 +107,20 @@ class KanjiGrid(QDialog):
             [kanji[x] for x in all_kanji],
             [],
             cols=int(config['cols']), 
-            threshold=int(config['threshold'])
+            threshold=int(config['threshold']),
+            separator=separator,
         ))
 
-        return html_doc(', '.join(sorted([self.mw.col.decks.get(x)['name'] for x in deck_ids])), ''.join(tier_docs))
+        return html_doc(', '.join(sorted([self.mw.col.decks.get(x)['name'] for x in deck_ids])), ''.join(tier_docs), threshold=config['threshold'])
 
 
 
     def savehtml(self):
-        filename, _ = QFileDialog.getSaveFileName(self, "Save KanjiGrid - HTML", "", "All Files (*)")
+        filename, _ = QFileDialog.getSaveFileName(self, "Save KanjiGrid - HTML", "", "Web Files (*.html)")
 
         if filename != "":
             self.mw.progress.start(immediate=True, label="Saving HTML Document")
-            html = self.generate()
+            html = self.generate(self.last_group_by, separator='\n')
 
             with codecs.open(filename, 'w', 'utf-8') as fh:
                 fh.write(html)

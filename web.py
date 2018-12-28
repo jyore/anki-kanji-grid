@@ -60,7 +60,7 @@ def legend():
     return "".join(chart)
 
 
-def html_doc(decks, elements):
+def html_doc(decks, elements, threshold=500):
     doc, tag, text = Doc().tagtext()
     doc.asis('<!DOCTYPE html>')
     with tag('html'):
@@ -78,7 +78,7 @@ def html_doc(decks, elements):
             doc.stag('br')
             with tag('div', style='margin-bottom: 24pt; padding: 20pt;'):
                 with tag('p', style='float: left'):
-                    text('Key:')
+                    text('Key (based on %s reviews):' % threshold)
                 doc.asis('<p style="float: right">Weak&nbsp; %s &nbsp;Strong</p>' % legend())
             with tag('div', style='clear: both;'):
                 doc.stag('br')
@@ -91,7 +91,7 @@ def html_doc(decks, elements):
     return doc.getvalue()
 
 
-def tier_html(name, found, missing, cols=40, threshold=500):
+def tier_html(name, found, missing, cols=40, threshold=500, separator=' | ', force_percent=False):
     doc, tag, text = Doc().tagtext()
     with tag('h2', style='color:#888;'):
         text(name)
@@ -99,7 +99,7 @@ def tier_html(name, found, missing, cols=40, threshold=500):
         with tag('h4', style='color:#888;'):
             nf = len(found)
 
-            if len(missing) > 0:
+            if force_percent or len(missing) > 0:
                 nt = len(found) + len(missing)
 
                 try:
@@ -118,7 +118,7 @@ def tier_html(name, found, missing, cols=40, threshold=500):
             with tag('tr'):
                 for char in chunk:
                     bgcolor = hsvrgbstr(calculate_strength(char['reviews'],threshold)) if char['reviews'] > 0 else '#ffffff'
-                    with tag('td', align='center', valign='top', style='background:%s;white-space:pre-line;' % bgcolor, title=tooltip(char)):
+                    with tag('td', align='center', valign='top', style='background:%s;white-space:pre-line;' % bgcolor, title=tooltip(char, separator=separator)):
                         with tag('a', href=jisho_kanji(char['name']), target="_blank"):
                             text(char['name'])
     doc.stag('br')
