@@ -70,11 +70,11 @@ To run the add-on and view your grid, start by selecting `Tools->Generate Kanji 
 After selecting how to group your results, select `ok` to generate the grid.
 ![Kanji Grid][grid]
 
+Above the Kanji display, it will list the number of Kanji you have cards for out of the total count for the set, along with the percent complete. Below the kanji list, a smaller grid can be expanded via a drop-down that shows all Kanji from the set that you do not have cards for:
+![Kanji Grid][grid-with-missing]
 
 When viewing the grid, you can hover over any Kanji to view stats related to your reviews of that character. You may also click the character to bring up the Jisho details on that specific character.
 ![Tool Tip][tooltip]
-
-
 
 Finally, you may choose to export the results into an HTML document or into a PDF file by using the export buttons at the bottom of the grid view.
 ![Export][export]
@@ -83,5 +83,6 @@ Finally, you may choose to export the results into an HTML document or into a PD
 [conf-menu]: https://user-images.githubusercontent.com/904738/50525132-3febb300-0a9f-11e9-8cc8-bef59a926e04.png
 [group-menu]: https://user-images.githubusercontent.com/904738/50525133-3febb300-0a9f-11e9-9d08-7de1733b54d2.png
 [grid]: https://user-images.githubusercontent.com/904738/50525134-40844980-0a9f-11e9-846c-4ea89829e707.png
+[grid-with-missing]: https://user-images.githubusercontent.com/904738/50527298-0f127a80-0aad-11e9-9243-c6d4eccc24c6.png
 [tooltip]: https://user-images.githubusercontent.com/904738/50525136-40844980-0a9f-11e9-847a-5373037ba6f7.png
 [export]: https://user-images.githubusercontent.com/904738/50525524-86421180-0aa1-11e9-9018-dad8e7e4af47.png
