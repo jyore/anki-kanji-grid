@@ -4,7 +4,7 @@ Create an interactive display of all of the Kanji from your decks with a relativ
 
 **Requires Anki 2.1**
 
-Add-On homepage: https://github.com/jyore/anki-kanji-grid
+Add-On homepage: https://github.com/jyore/anki-kanji-grid<br/>
 Issue list: https://github.com/jyore/anki-kanji-grid/issues
 
 
