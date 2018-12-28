@@ -91,7 +91,7 @@ def html_doc(decks, elements, threshold=500):
     return doc.getvalue()
 
 
-def tier_html(name, found, missing, cols=40, threshold=500, separator=' | ', force_percent=False):
+def tier_html(name, results, found, missing, cols=40, threshold=500, separator=' | ', force_percent=False):
     doc, tag, text = Doc().tagtext()
     with tag('h2', style='color:#888;'):
         text(name)
@@ -101,7 +101,6 @@ def tier_html(name, found, missing, cols=40, threshold=500, separator=' | ', for
 
             if force_percent or len(missing) > 0:
                 nt = len(found) + len(missing)
-
                 try:
                     pct = (nf*100.0)/nt
                 except ZeroDivisionError:
@@ -117,10 +116,10 @@ def tier_html(name, found, missing, cols=40, threshold=500, separator=' | ', for
         for chunk in chunks(found, cols):
             with tag('tr'):
                 for char in chunk:
-                    bgcolor = hsvrgbstr(calculate_strength(char['reviews'],threshold)) if char['reviews'] > 0 else '#ffffff'
-                    with tag('td', align='center', valign='top', style='background:%s;white-space:pre-line;' % bgcolor, title=tooltip(char, separator=separator)):
-                        with tag('a', href=jisho_kanji(char['name']), target="_blank"):
-                            text(char['name'])
+                    bgcolor = hsvrgbstr(calculate_strength(results[char]['reviews'],threshold)) if results[char]['reviews'] > 0 else '#ffffff'
+                    with tag('td', align='center', valign='top', style='background:%s;white-space:pre-line;' % bgcolor, title=tooltip(results[char], separator=separator)):
+                        with tag('a', href=jisho_kanji(char)):
+                            text(char)
     doc.stag('br')
 
     if len(missing) > 0:

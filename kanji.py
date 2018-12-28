@@ -70,12 +70,15 @@ def kanji_search(decks, exclusions={}):
 
 
 
-def find_kanji_in_tier(characters, kanji_list):
+def find_kanji_in_tier(results, kanji_list):
 
     found = []
-    for character in characters:
-        if character in kanji_list:
-            found.append(character)
+    missing = []
+    for kanji in kanji_list:
+        if kanji in results:
+            found.append(kanji)
+        else:
+            missing.append(kanji)
 
-    return ([characters[x] for x in found], list(set(kanji_list) - set(found)))
+    return (found, missing)
         

@@ -82,7 +82,7 @@ class KanjiGrid(QDialog):
 
 
         kanji = kanji_search(deck_ids, exclusions)
-        all_kanji = [kanji[character]['name'] for character in kanji]
+        all_kanji = list(kanji.keys())
         tiers = config['tiers'][group_by]
         tier_docs = []
 
@@ -91,9 +91,10 @@ class KanjiGrid(QDialog):
             tier_char = list(tier.values())[0]
             
             found, missing = find_kanji_in_tier(kanji, tier_char)
-            all_kanji = list(set(all_kanji) - set([k['name'] for k in found]))
+            all_kanji = list(set(all_kanji) - set(found))
             tier_docs.append(tier_html(
                 tier_name, 
+                kanji,
                 found, 
                 missing, 
                 cols=int(config['cols']), 
@@ -104,7 +105,8 @@ class KanjiGrid(QDialog):
 
         tier_docs.append(tier_html(
             "Additional Kanji" if group_by != 'None' else 'All Kanji',
-            [kanji[x] for x in all_kanji],
+            kanji,
+            list(all_kanji),
             [],
             cols=int(config['cols']), 
             threshold=int(config['threshold']),
