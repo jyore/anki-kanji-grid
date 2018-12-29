@@ -3,9 +3,9 @@ import codecs
 
 from aqt.qt import *
 from aqt.webview import AnkiWebView
-from aqt.utils import showInfo
+from aqt.utils import showInfo, tooltip
 
-from ..kanji import kanji_search, find_kanji_in_tier
+from ..kanji import kanji_search, find_kanji_in_tier, KanjiSets
 from ..web import html_doc, tier_html
 
 
@@ -16,6 +16,7 @@ class KanjiGrid(QDialog):
     def __init__(self, mw):
         super(KanjiGrid, self).__init__(mw)
         self.mw = mw
+        self.sets = KanjiSets()
 
         self.title = "Kanji Grid"
         self.setModal(True)
@@ -82,8 +83,7 @@ class KanjiGrid(QDialog):
 
 
         kanji = kanji_search(deck_ids, exclusions)
-        all_kanji = list(kanji.keys())
-        tiers = config['tiers'][group_by]
+        tiers = self.sets[group_by]
         tier_docs = []
 
         for tier in tiers:
@@ -91,7 +91,6 @@ class KanjiGrid(QDialog):
             tier_char = list(tier.values())[0]
             
             found, missing = find_kanji_in_tier(kanji, tier_char)
-            all_kanji = list(set(all_kanji) - set(found))
             tier_docs.append(tier_html(
                 tier_name, 
                 kanji,
@@ -102,11 +101,13 @@ class KanjiGrid(QDialog):
                 separator=separator,
                 force_percent=True,
             ))
+            for k in found:
+                del kanji[k]
 
         tier_docs.append(tier_html(
             "Additional Kanji" if group_by != 'None' else 'All Kanji',
             kanji,
-            list(all_kanji),
+            list(kanji.keys()),
             [],
             cols=int(config['cols']), 
             threshold=int(config['threshold']),

@@ -1,4 +1,6 @@
 
+import json
+import os
 import re
 
 from aqt import mw
@@ -26,6 +28,9 @@ from
     revlog
 where
     cid = %s"""
+
+SETS = os.path.join(os.path.dirname(__file__), "sets.json")
+
 
 
 def kanji_search(decks, exclusions={}):
@@ -82,3 +87,18 @@ def find_kanji_in_tier(results, kanji_list):
 
     return (found, missing)
         
+
+class KanjiSets():
+
+    def __init__(self):
+        self.load()
+
+    def load(self):
+        with open(SETS, encoding='utf-8') as fh:
+            self.sets = json.load(fh)
+
+    def set_names(self):
+        return list(self.sets.keys())
+
+    def __getitem__(self, key):
+        return self.sets[key]

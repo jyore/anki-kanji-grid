@@ -1,14 +1,14 @@
 
-
 from aqt.qt import *
 from .base import Dialog
-
+from ..kanji import KanjiSets
 
 
 class Launcher(Dialog):
 
     def __init__(self, mw):
         self.mw = mw
+        self.sets = KanjiSets()
         super(Launcher, self).__init__("Generate", self.mw)
 
 
@@ -34,10 +34,10 @@ class Launcher(Dialog):
 
 
     def show(self):
-        config = self.mw.addonManager.getConfig(__name__) 
+        self.sets.load()        
 
         self.group_by.clear()
-        self.group_by.addItems(config['tiers'].keys())
+        self.group_by.addItems(self.sets.set_names())
         super(Launcher, self).show()
 
 
